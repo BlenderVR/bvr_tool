@@ -1,0 +1,4 @@
+[submodule "source"]
+	path = source
+	url = https://github.com/BlenderVR/source.git
+	branch = bvr_addon

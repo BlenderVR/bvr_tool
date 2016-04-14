@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# file: bvr/bvrprefs.py
+# file: bvr/bvrconsole.py
 
 ## Copyright (C) LIMSI-CNRS (2016)
 ##
@@ -37,48 +37,57 @@
 
 # <pep8 compliant>
 
-"""Manage preference files read and write.
+"""Management of BlenderVR Console functionnalities without GUI.
 
-Preference read and write is splitted from BlenderVR properties, as
-it dont save all properties needed at BlenderVR runtime console control.
-
-For the xml configuration file read, see bvrconfig module.
+The tools here provide possible callbacks for some GUI interaction,
+but
 """
 
-# ===== Normal module imports.
-# Load needed standard modules.
-import pickle
+import os
+import sys
+from os import path as osp
+import functools
+import builtins     # Important: we modify builtins to add our stuff!
 
-# Load our environment settings (include standard config access path).
 from . import (
-        bvrenv,
-        bvrprops,
-        )
+    bvrenv,         # Import first ! it setup our execution environment.
+    )
 
-# TODO: Save configuration as some readable .INI file
-def save_prefs(propertiesgroup, filepath):
-    """Save the prefs part of a BlenderVRProps in a file."""
-    # TODO
-    # 1) load config content
-    # 2) modify keys/values
-    # 3) write content
-    # This to ensure to keep user comments in the file.
-    try:
-        with open(filepath, 'wb') as cfgfile:
-            pickle.dump(node, cfgfile)
-    except IOError as e:
-        print('Configuration save error:', filepath, e)
+# Note: as bvr is imported, normally package import of blender DONT start
+# the 
+from blendervr.tools import connector
+from blendervr.tools import protocol
 
 
-def load_prefs(filepath, propertiesgroup):
-    """Load prefs from a file and update attributes in a BlenderVRProps."""
-    try:
-        with open(filepath, 'rb') as cfgfile:
-            config = pickle.load(cfgfile)
-            if DEBUG:
-                #print("Consoleuration:")
-                pprint.pprint(consoleuration)
-        return config
-    except IOError as e:
-        print('Configuration load error:', filepath, e)
+DEBUG = True
 
+
+class BVRDaemonManager:
+    """Control a (remote/local) BlenderVR daemon.
+    
+    :ivar callbacks: map of callable for some events related to daemons.
+    :type callbacks: {str:[func]}
+    """
+    def __init__(self):
+        self.callbacks = {}
+
+    def register_callback(self, events, callback):
+        """Install a callback for a set of events.
+        """
+        for e in events:
+            self.callbacks.setdefault(e, []).append(callback)
+
+    def reset_callbacks(self):
+        # We use Python reference counting to "loose" all callbacks.
+        # Else must go throught keys, and cleanup lists before removing them…
+        self.callbacks = {}
+
+
+class BVRLogCatcher:
+    """Listen for BlenderVR daemons logs.
+    
+    Central logs Used to:
+    1) 
+    """
+    def __init__(self):
+        pass

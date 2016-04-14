@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# file: bvr/bvrprefs.py
+# file: bvr/bvrconfig.py
 
 ## Copyright (C) LIMSI-CNRS (2016)
 ##
@@ -37,17 +37,14 @@
 
 # <pep8 compliant>
 
-"""Manage preference files read and write.
+"""Access to the XML configuration file of VR systems.
 
-Preference read and write is splitted from BlenderVR properties, as
-it dont save all properties needed at BlenderVR runtime console control.
-
-For the xml configuration file read, see bvrconfig module.
+This is a layer on top of 
 """
 
-# ===== Normal module imports.
-# Load needed standard modules.
-import pickle
+import logging
+
+_logger = logging.getLogger("console")
 
 # Load our environment settings (include standard config access path).
 from . import (
@@ -55,30 +52,36 @@ from . import (
         bvrprops,
         )
 
-# TODO: Save configuration as some readable .INI file
-def save_prefs(propertiesgroup, filepath):
-    """Save the prefs part of a BlenderVRProps in a file."""
-    # TODO
-    # 1) load config content
-    # 2) modify keys/values
-    # 3) write content
-    # This to ensure to keep user comments in the file.
-    try:
-        with open(filepath, 'wb') as cfgfile:
-            pickle.dump(node, cfgfile)
-    except IOError as e:
-        print('Configuration save error:', filepath, e)
 
 
-def load_prefs(filepath, propertiesgroup):
-    """Load prefs from a file and update attributes in a BlenderVRProps."""
-    try:
-        with open(filepath, 'rb') as cfgfile:
-            config = pickle.load(cfgfile)
-            if DEBUG:
-                #print("Consoleuration:")
-                pprint.pprint(consoleuration)
-        return config
-    except IOError as e:
-        print('Configuration load error:', filepath, e)
+# We rely on core BlenderVR configuration management, as it deal with
+# special extensions to XML to allow some Python parts execution when
+# building configuration values.
+from blendervr.console.xml import Configure
+
+
+def load_configuration(config_paths, config_file):
+    """Return a blendervr Configure object corresponding to configuration file.
+    
+    :param config_file: bas XML configuration file.
+    :type config_file: string
+    :param config_paths: directories where other configuration file must be searched.
+    :type config_paths: string
+    :rtype: blendervr.console.xml.Configure
+    :return: configuration object
+    """
+    global _logger
+    # Ensure we have the right logger.
+    _logger = logging.getLogger("console")
+
+    # What is 'parent' (thanks to the NO documentation)
+    # In the configuration object MainBase inherited class, parent can be a
+    # MainBase or a module.
+    # Dont know its usage (except that it use the _logger attribute), so
+    # use this module as parent.
+    parent = sys.modules[__name__]
+
+    cfg = Config(parent, config_paths, config_file)
+
+    return cfg
 

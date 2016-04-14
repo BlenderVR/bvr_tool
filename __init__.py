@@ -1,101 +1,126 @@
-#====================== BEGIN GPL LICENSE BLOCK ======================
-#
-#  This program is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU General Public License
-#  as published by the Free Software Foundation; either version 2
-#  of the License, or (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software Foundation,
-#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-#
-#======================= END GPL LICENSE BLOCK ========================
+# -*- coding: utf-8 -*-
+# file: bvr/__init__.py
 
+## Copyright (C) LIMSI-CNRS (2016)
+##
+## contributor(s) : Jorge Gascon, Damien Touraine, David Poirier-Quinot,
+## Laurent Pointal, Julian Adenauer,
+##
+## This software is a computer program whose purpose is to distribute
+## blender to render on Virtual Reality device systems.
+##
+## This software is governed by the CeCILL  license under French law and
+## abiding by the rules of distribution of free software.  You can  use,
+## modify and/ or redistribute the software under the terms of the CeCILL
+## license as circulated by CEA, CNRS and INRIA at the following URL
+## "http://www.cecill.info".
+##
+## As a counterpart to the access to the source code and  rights to copy,
+## modify and redistribute granted by the license, users are provided only
+## with a limited warranty  and the software's author,  the holder of the
+## economic rights,  and the successive licensors  have only  limited
+## liability.
+##
+## In this respect, the user's attention is drawn to the risks associated
+## with loading,  using,  modifying and/or developing or reproducing the
+## software by the user in light of its specific status of free software,
+## that may mean  that it is complicated to manipulate,  and  that  also
+## therefore means  that it is reserved for developers  and  experienced
+## professionals having in-depth computer knowledge. Users are therefore
+## encouraged to load and test the software's suitability as regards their
+## requirements in conditions enabling the security of their systems and/or
+## data to be ensured and,  more generally, to use and operate it in the
+## same conditions as regards security.
+##
+## The fact that you are presently reading this means that you have had
+## knowledge of the CeCILL license and that you accept its terms.
+
+# <pep8 compliant>
+
+"""Blender tool to manage BlenderVR directly within Blender GUI.
+
+This tool replace the BlenderVR console by a Blender Tool, removing
+Qt / PySide dependancy, and making smooth integration with the 
+modeling / animation / rendering software.
+
+As it is started within a Blender GUI context, it duplicate necessary
+initialisation code from original blendervr console script.
+"""
+
+DEBUG = True    # To enable/disable some print calls
+
+# Meta-data describe the tool for Blender tools GUI (provide informations, links
+# for help, versions, etc).
 bl_info = {
     "name": "BlenderVR",
     "author": "David Poirier-Quinot",
     "version": (0, 1),
     "blender": (2, 7, 6),
     "location": "3D View > Toolbox",
-    "description": "A collection of tools to configure your BlenderVR environment.",
+    "description": "A collection of tools to configure and control your BlenderVR environment.",
     "warning": "",
     'tracker_url': 'https://github.com/BlenderVR/source/issues',
     "wiki_url": "http://blendervr.limsi.fr",
     'support': 'COMMUNITY',
     "category": "Game Engine"
-}
+    }
 
-if "bpy" in locals():
-    import importlib
-    importlib.reload(ui)
-else:
-    import bpy
-    from bpy.props import (
-            StringProperty,
-            EnumProperty,
-            PointerProperty
-            )
-    from bpy.types import (
-            PropertyGroup
-            )
-    from . import (
-            ui,
-            operators
-            )
+
+# ===== Normal module imports.
+# Load needed standard modules.
+import os
+from os import path as osp
 import imp
+import builtins     # Important: we modify builtins to add our stuff!
+import pickle
+import pprint
 
-class BlenderVRSettings(PropertyGroup):
-    screen_setup = EnumProperty(
-            name="Screen",
-            description="VR architecture screen setup",
-            items=(('console_debug', "Console Debug", ""),
-                   ('dk2_debug', "DK2 Debug", "")),
-            default='console_debug',
-            )
-    # config_file_path = StringProperty(
-    #         name="Configuration File Path",
-    #         description="Path to the configuration file",
-    #         default="//", maxlen=1024, subtype="FILE_PATH",
-    #         )
-    config_file_path = StringProperty(
-            name="Configuration File Path",
-            description="Path to the configuration file",
-            default="/Users/AstrApple/.config/blendervr/main_pers1.1.xml", maxlen=1024, subtype="FILE_PATH",
-            )
-    blend_scene_file_path = StringProperty(
-            name="Blender File Path",
-            description="Path to the blend scene",
-            default="//", maxlen=1024, subtype="FILE_PATH",
-            )
-    processor_file_path = StringProperty(
-            name="Processor File Path",
-            description="Path to the processor file",
-            default="//", maxlen=1024, subtype="FILE_PATH",
-            )
-# ############################################################
-# Un/Registration
-# ############################################################
+# Load necessary stuff from blender.
+import bpy
+from bpy.props import (
+    StringProperty,
+    EnumProperty,
+    PointerProperty,
+    BoolProperty
+    )
+from bpy.types import (
+    PropertyGroup
+    )
 
+# Load our package management
+from . import (
+    bvrenv,         # Import first ! it setup our execution environment.
+    bvrprops,
+    bvrprefs,
+    bvroperators,
+    bvrui,
+    bvrconsole,
+    bvrconfig,
+    )
+
+
+# ======================================================================
 def register():
+    """Register the Blender GUI tools, and setup for BlenderVR console."""
 
-    bpy.utils.register_class(BlenderVRSettings)
+    # Register classes of our submodules.
+    bvrprops.register()
+    bvroperators.register()
+    bvrui.register()
 
-    ui.register()
-    operators.register()
-
-    bpy.types.Scene.blendervr = PointerProperty(type=BlenderVRSettings)
+    # Register this tool properties object in blender Scene type.
+    bpy.types.Scene.blendervr = PointerProperty(type=bvrprops.BlenderVRProps)
 
 
+# Register function is run when the addon is disabled.
 def unregister():
+    """Unregister the Blender GUI tools, and remove BlenderVR console stuff."""
 
-    bpy.utils.unregister_class(BlenderVRSettings)
-
-    ui.unregister()
-    operators.unregister()
-
+    # Remove this tool properties object from blender Scene type.
     del bpy.types.Scene.blendervr
+
+    # Unregister classes of our submodules.
+    bvrui.unregister()
+    bvroperators.unregister()
+    bvrprops.unregister()
+

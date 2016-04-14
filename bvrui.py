@@ -1,11 +1,52 @@
 # -*- coding: utf-8 -*-
-# file: bvr/ui.py
+# file: bvr/bvrui.py
 
-# TODO: May have to make BlenderVR GPL to include in blender tools
-# (see licence policies for such tools).
+## Copyright (C) LIMSI-CNRS (2016)
+##
+## contributor(s) : Jorge Gascon, Damien Touraine, David Poirier-Quinot,
+## Laurent Pointal, Julian Adenauer,
+##
+## This software is a computer program whose purpose is to distribute
+## blender to render on Virtual Reality device systems.
+##
+## This software is governed by the CeCILL  license under French law and
+## abiding by the rules of distribution of free software.  You can  use,
+## modify and/ or redistribute the software under the terms of the CeCILL
+## license as circulated by CEA, CNRS and INRIA at the following URL
+## "http://www.cecill.info".
+##
+## As a counterpart to the access to the source code and  rights to copy,
+## modify and redistribute granted by the license, users are provided only
+## with a limited warranty  and the software's author,  the holder of the
+## economic rights,  and the successive licensors  have only  limited
+## liability.
+##
+## In this respect, the user's attention is drawn to the risks associated
+## with loading,  using,  modifying and/or developing or reproducing the
+## software by the user in light of its specific status of free software,
+## that may mean  that it is complicated to manipulate,  and  that  also
+## therefore means  that it is reserved for developers  and  experienced
+## professionals having in-depth computer knowledge. Users are therefore
+## encouraged to load and test the software's suitability as regards their
+## requirements in conditions enabling the security of their systems and/or
+## data to be ensured and,  more generally, to use and operate it in the
+## same conditions as regards security.
+##
+## The fact that you are presently reading this means that you have had
+## knowledge of the CeCILL license and that you accept its terms.
+
+# <pep8 compliant>
+
+"""
+"""
 
 import bpy
-from bpy.types import Panel
+#from bpy.types import Panel
+
+# Load our environment settings (include standard config access path).
+from . import (
+        bvrprops,
+        )
 
 # ############################################################
 # User Interface
@@ -14,12 +55,78 @@ from bpy.types import Panel
 class BlenderVRUIBase:
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
-    bl_description= ""
-    bl_category = "BlenderVR"
+    bl_description= "Blender Virtuel Reality integration within Game Engine."
+    bl_category = "BlenderVR"   # The side tab name where toolbar must be displayed.
 
-class BlenderVRToolBar(BlenderVRUIBase, Panel):
 
-    bl_label = "BlenderVR"
+#class BlenderVRToolBar(BlenderVRUIBase, Panel):
+
+    #bl_label = "BlenderVR"
+
+    #@staticmethod
+    #def draw(self, context):
+        #layout = self.layout
+
+        #scene = context.scene
+        #blendervr = scene.blendervr
+        #obj = context.object
+
+        ## ----------------------------------------------
+        #row = layout.row()
+        #row.label("BlenderVR Configuration:")
+
+        ## Configuration file
+        #col = layout.column()
+        #rowsub = col.row(align=True)
+        #rowsub.label("Select config file:")
+        #rowsub = col.row(align=True)
+        #rowsub.prop(blendervr, "config_file_path", text="")
+        #rowsub = col.row(align=True)
+        #rowsub.operator("bvr.configfile", text="Load").action = 'load'
+        #rowsub.operator("bvr.configfile", text="Create New").action = 'new'
+
+        ## Screen setup
+        #col = layout.column()
+        #rowsub = col.row(align=True)
+        #rowsub.label("Select screen setup:")
+        #rowsub = col.row(align=True)
+        #rowsub.prop(blendervr, "screen_setup", text="")
+
+        ## Blender scene
+        #col = layout.column()
+        #rowsub = col.row(align=True)
+        #rowsub.label("Select Blender scene:")
+        #rowsub = col.row()
+        #rowsub.prop(blendervr, "blend_scene_file_path", text="")
+        #rowsub = col.row(align=True)
+        #rowsub.operator("bvr.blenderscene", text="Use Current").action = 'current'
+
+        ## Processor file
+        #col = layout.column()
+        #rowsub = col.row(align=True)
+        #rowsub.label("Select Processor File:")
+        #rowsub = col.row()
+        #rowsub.prop(blendervr, "processor_file_path", text="")
+        #rowsub = col.row(align=True)
+        #rowsub.operator("bvr.blenderscene", text="Name Link").action = 'NameLink'
+
+        ## Launcher
+        #row = layout.row()
+        #row.label("BlenderVR Launcher:")
+        #rowsub = layout.row(align=True)
+        #rowsub.operator("bvr.launcher", text='Start').action = 'start'
+        #rowsub.operator("bvr.launcher", text='Stop').action = 'stop'
+
+        ## Debug Windows
+        #row = layout.row()
+        #row.label("Debug Windows:")
+        #rowsub = layout.row(align=True)
+        #rowsub.operator("bvr.launcher", text='Display Debug Windows').action = 'debug.window'
+
+
+class BVRDisplaySystemToolBar(BlenderVRUIBase, bpy.types.Panel):
+    """Panel to select a Virtual Reality system to use and activate it."""
+    bl_label = "VR Display System"
 
     @staticmethod
     def draw(self, context):
@@ -30,69 +137,7 @@ class BlenderVRToolBar(BlenderVRUIBase, Panel):
         obj = context.object
 
         # ----------------------------------------------
-        row = layout.row()
-        row.label("BlenderVR Configuration:")
-
-        # Configuration file
-        col = layout.column()
-        rowsub = col.row(align=True)
-        rowsub.label("Select config file:")
-        rowsub = col.row(align=True)
-        rowsub.prop(blendervr, "config_file_path", text="")
-        rowsub = col.row(align=True)
-        rowsub.operator("bvr.loadconfigfile", text="Load").arg = 'load'
-        rowsub.operator("bvr.loadconfigfile", text="Create New").arg = 'new'
-
-        # Screen setup
-        col = layout.column()
-        rowsub = col.row(align=True)
-        rowsub.label("Select screen setup:")
-        rowsub = col.row(align=True)
-        rowsub.prop(blendervr, "screen_setup", text="")
-
-        # Blender scene
-        col = layout.column()
-        rowsub = col.row(align=True)
-        rowsub.label("Select Blender scene:")
-        rowsub = col.row()
-        rowsub.prop(blendervr, "blend_scene_file_path", text="")
-        rowsub = col.row(align=True)
-        rowsub.operator("bvr.loadblenderscene", text="Use Current").arg = 'current'
-
-        # Processor file
-        col = layout.column()
-        rowsub = col.row(align=True)
-        rowsub.label("Select Processor File:")
-        rowsub = col.row()
-        rowsub.prop(blendervr, "processor_file_path", text="")
-        rowsub = col.row(align=True)
-        rowsub.operator("bvr.loadblenderscene", text="Name Link").arg = 'NameLink'
-
-        # Launcher
-        row = layout.row()
-        row.label("BlenderVR Launcher:")
-        rowsub = layout.row(align=True)
-        rowsub.operator("bvr.launcher", text='Start').arg = 'start'
-        rowsub.operator("bvr.launcher", text='Stop').arg = 'stop'
-
-        # Debug Windows
-        row = layout.row()
-        row.label("Debug Windows:")
-        rowsub = layout.row(align=True)
-        rowsub.operator("bvr.launcher", text='Display Debug Windows').arg = 'debug.window'
-
-
-class BVRDisplaySystemToolBar(BlenderVRUIBase, Panel):
-    """Panel to select a Virtual Reality system to use and activate it."""
-    bl_label = "VR Display System"
-        layout = self.layout
-
-        scene = context.scene
-        blendervr = scene.blendervr
-        obj = context.object
-
-        # ----------------------------------------------
-        row = layout.row()
+        #row = layout.row()
 
         # Configuration file
         # A file selection field (with right button to open dialog)
@@ -106,8 +151,8 @@ class BVRDisplaySystemToolBar(BlenderVRUIBase, Panel):
         # TODO: must load the file content when it is valid (to update
         # widgets status upon that content and its validity).
         rowsub = col.row(align=True)
-        rowsub.operator("bvr.loadconfigfile", text="Reload").arg = 'load'
-        rowsub.operator("bvr.loadconfigfile", text="Create New").arg = 'new'
+        rowsub.operator("bvr.configfile", text="Reload").action = 'reload'
+        rowsub.operator("bvr.configfile", text="Create New").action = 'new'
         rowsub = col.row(align=True)
         # A selection list to select a screens set from those listed in
         # the selected configuration file.
@@ -120,14 +165,60 @@ class BVRDisplaySystemToolBar(BlenderVRUIBase, Panel):
         rowsub = col.row(align=True)
         rowsub.label("RV Daemons:")
         rowsub = col.row(align=True)
-        rowsub.operator("bvr.launcher", text="Start").arg = 'start'
-        rowsub.operator("bvr.launcher", text="Stop").arg = 'stop'
+        rowsub.operator("bvr.launcher", text="Start").action = 'startdaemons'
+        rowsub.operator("bvr.launcher", text="Stop").action = 'stopdaemons'
         rowsub = col.row(align=True)
-        rowsub.prop(blendervr, "auto_open_logs", text="")
+        rowsub.prop(blendervr, "auto_open_logs", "Auto open logs")
 
-class BVRSceneScriptsToolBar(BlenderVRUIBase, Panel):
+
+class BVRSceneScriptsToolBar(BlenderVRUIBase, bpy.types.Panel):
     """Panel to select a scene file, processir, and to use it in VR system."""
-    bl_label = "VR Scene And Scripts"
+    bl_label = "VR Scene & Scripts"
+
+    @staticmethod
+    def draw(self, context):
+        layout = self.layout
+
+        scene = context.scene
+        blendervr = scene.blendervr
+        obj = context.object
+
+        # ----------------------------------------------
+        #row = layout.row()
+
+        # Blender scene
+        col = layout.column()
+        rowsub = col.row(align=True)
+        rowsub.label("Blender Scene:")
+        rowsub = col.row()
+        rowsub.prop(blendervr, "blend_scene_file_path", text="")
+        rowsub = col.row(align=True)
+        rowsub.operator("bvr.blenderscene", text="Use Current").action = 'usecurrent'
+
+        # Processor file
+        col = layout.column()
+        rowsub = col.row(align=True)
+        rowsub.label("Processor File:")
+        rowsub = col.row()
+        rowsub.prop(blendervr, "processor_file_path", text="")
+        rowsub = col.row(align=True)
+        rowsub.operator("bvr.blenderscene", text="Name Link").action = 'usenamelink'
+
+
+        # Two buttons to manage start and stop of blenderplayers.
+        rowsub = col.row(align=True)
+        rowsub.label("Scene Play:")
+        rowsub = col.row(align=True)
+        rowsub.operator("bvr.launcher", text="Start").action = 'startplay'
+        rowsub.operator("bvr.launcher", text="Stop").action = 'stopplay'
+
+
+class BVRStatusToolBar(BlenderVRUIBase, bpy.types.Panel):
+    """Panel to show current daemons / renderers status and interact."""
+    bl_label = "VR Status"
+
+    @staticmethod
+    def draw(self, context):
         layout = self.layout
 
         scene = context.scene
@@ -136,34 +227,22 @@ class BVRSceneScriptsToolBar(BlenderVRUIBase, Panel):
 
         # ----------------------------------------------
         row = layout.row()
-
-        # Configuration file
-        # A file selection field (with right button to open dialog)
-        # followed by two action buttons, 
         col = layout.column()
         rowsub = col.row(align=True)
-        rowsub.label("Configuration File:")
-        rowsub = col.row(align=True)
-        rowsub.prop(blendervr, "config_file_path", text="")
-        rowsub = col.row(align=True)
-        rowsub.operator("bvr.loadconfigfile", text="Reload").arg = 'load'
-        rowsub.operator("bvr.loadconfigfile", text="Create New").arg = 'new'
-        rowsub = col.row(align=True)
-        rowsub.label("Screens Set:")
-        rowsub = col.row(align=True)
-        rowsub.prop(blendervr, "screen_setup", text="")
+        rowsub.label("Daemons &  Players status:")
 
-        
-# ############################################################
-# Un/Registration
-# ############################################################
+        # May add sets of grouped items with each containing:
+            # Maybe a label (?)
+            # An colored icon / text? representing the state
+            # An interaction menu
 
+# ======================================================================
 def register():
-    #bpy.utils.register_class(BlenderVRToolBar)
     bpy.utils.register_class(BVRDisplaySystemToolBar)
     bpy.utils.register_class(BVRSceneScriptsToolBar)
+    bpy.utils.register_class(BVRStatusToolBar)
 
 def unregister():
-    #bpy.utils.unregister_class(BlenderVRToolBar)
     bpy.utils.unregister_class(BVRDisplaySystemToolBar)
     bpy.utils.unregister_class(BVRSceneScriptsToolBar)
+    bpy.utils.unregister_class(BVRStatusToolBar)

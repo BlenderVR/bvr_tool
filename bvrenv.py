@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# file: bvr/operator.py
+# file: bvr/bvrenv.py
 
 ## Copyright (C) LIMSI-CNRS (2016)
 ##
@@ -45,19 +45,18 @@ location, installation path for blendervr, etc), install global names
 in Python builtins, and adjust python path to access blendervr package.
 """
 
-# ===== Normal module imports.
-# Load needed standard modules.
 import os
 import sys
 from os import path as osp
 import functools
 import builtins     # Important: we modify builtins to add our stuff!
- 
+
+# Note: this module is Blender and blendervr agnostic!
 
 DEBUG = True
 
 # Constants.
-CONFIG_FILENAME = "profile_1.0.pickle"
+CONFIG_FILENAME = "profile_1.1.ini"
 
 
 # Globals (ajusted in setup_environment())

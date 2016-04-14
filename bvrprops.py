@@ -87,32 +87,43 @@ class BlenderVRProps(bpy.types.PropertyGroup):
     
     # Following properties are saved and loaded from configuration file
     config_file_path = bpy.props.StringProperty(
-            name="BlenderVR Configuration File Path",
-            description="Path to the .xml configuration file",
-            default=osp.join(bvrenv.blendervr_config_dir, "main_pers1.1.xml"),
-            maxlen=1024, subtype="FILE_PATH",
-            )
+        name="BlenderVR Configuration File Path",
+        description="Path to the .xml configuration file describing physical VR installation.",
+        default=osp.join(bvrenv.blendervr_config_dir, "main_pers1.1.xml"),
+        maxlen=1024, subtype="FILE_PATH",
+        )
     screen_setup = bpy.props.EnumProperty(
-            name="Screen",
-            description="VR architecture screen setup",
-            items=(('console_debug', "Console Debug", ""),
-                   ('dk2_debug', "DK2 Debug", "")),
-            default='console_debug',
-            )
-
-
+        name="Screens architecture",
+        description="VR architecture screens setup within the choosen installation.",
+        items=(('console_debug', "Console Debug", ""),
+                ('dk2_debug', "DK2 Debug", "")),
+        default='console_debug',
+        )
     blend_scene_file_path = bpy.props.StringProperty(
-            name="Blender File Path",
-            description="Path to the blend scene",
-            default="//", 
-            maxlen=1024, subtype="FILE_PATH",
-            )
+        name="Blender Scene File Path",
+        description="Path to the blend scene to be rendered in the VR system.",
+        default="//", 
+        maxlen=1024, subtype="FILE_PATH",
+        )
     processor_file_path = bpy.props.StringProperty(
-            name="Processor File Path",
-            description="Path to the processor file",
-            default="//", 
-            maxlen=1024, subtype="FILE_PATH",
-            )
+        name="Processor File Path",
+        description="Path to the processor file used for RV scene interaction logic.",
+        default="//", 
+        maxlen=1024, subtype="FILE_PATH",
+        )
+    use_name_link = bpy.props.BoolProperty(
+        name="Use Name Link",
+        description="Use <blend file>.processor.py by corresponding name.",
+        default=False, 
+        subtype="NONE",
+        options={'HIDDEN'},
+        )
+    auto_open_logs = bpy.props.BoolProperty(
+        name="Auto open logs",
+        description="Automatically open log windows trigged on errors detection.",
+        default=False, 
+        subtype="NONE",
+        )
 
     # Following properties are used for GUI interaction.
     
@@ -121,10 +132,12 @@ class BlenderVRProps(bpy.types.PropertyGroup):
     
 
 
+# ======================================================================
 def register():
     """Register classes of this submodule."""
     bpy.utils.register_class(BlenderVRProps)
 
+    print(dir(BlenderVRProps.auto_open_logs))
 
 def unregister():
     """Unregister classes of this submodule."""

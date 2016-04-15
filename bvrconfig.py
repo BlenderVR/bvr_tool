@@ -43,15 +43,20 @@ This is a layer on top of
 """
 
 import logging
+logger = logging.getLogger(__name__)
 
-_logger = logging.getLogger("console")
+# For blendervr usage of Configure's parent when it is a module…
+_logger = logging.getLogger("blendervr-console")
 
 # Load our environment settings (include standard config access path).
 from . import (
-        bvrenv,
-        bvrprops,
-        )
+    RUNTIME,
+    bvrenv,
+    bvrprops,
+    )
 
+# To debug this module.
+DEBUG = True and not RUNTIME
 
 
 # We rely on core BlenderVR configuration management, as it deal with
@@ -70,10 +75,6 @@ def load_configuration(config_paths, config_file):
     :rtype: blendervr.console.xml.Configure
     :return: configuration object
     """
-    global _logger
-    # Ensure we have the right logger.
-    _logger = logging.getLogger("console")
-
     # What is 'parent' (thanks to the NO documentation)
     # In the configuration object MainBase inherited class, parent can be a
     # MainBase or a module.

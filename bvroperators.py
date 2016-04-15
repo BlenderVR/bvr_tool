@@ -44,8 +44,23 @@ operator within the interface. You must set the operator's object action
 property.
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 import bpy
 from bpy.types import Operator
+
+from . import (
+    RUNTIME,
+    bvrconsole,
+    )
+
+# To debug this module.
+DEBUG = True and not RUNTIME
+
+
+console = bvrconsole.BVRConsoleControler()
+console.start()
 
 
 class BlenderVRConfigFileOperator(Operator):
@@ -174,35 +189,30 @@ class BlenderVRLaunchOperator(bpy.types.Operator):
 
     def execute_startdaemons(self, context):
         """Start control daemons on rendering nodes."""
-
-         # get file path
         scene = context.scene
         props = scene.blendervr
-        # tryout, start blenderplayer
-        # bpy.ops.wm.blenderplayer_start()
 
-        import subprocess
-        args = ['python3', '/Users/AstrApple/WorkSpace/Blender_Workspace/addons/blendervr/source/blenderVR', 'controller']
-        props.proc = subprocess.Popen(args,stdin=subprocess.PIPE, stdout=subprocess.PIPE, close_fds=True)
-        print('opened',props.proc)
-
-        # outs, errs = props.proc.communicate(timeout=15)
-        outs, errs = props.proc.communicate()
-        print('first words: \n', outs,errs)
-
+        # Load XML configuration - this must be moved into a GUI handler
+        # trigged by validity of configuration file field as a file.
+        console.profile.setValue(['config', 'file'], props.config_file_path)
+        console.load_configuration_file()
+        console.profile.setValue(['screen', 'set'], props.screen_setup)
+        console.profile.setValue(['files', 'blender'], props.blend_scene_file_path)
+        console.profile.setValue(['files', 'processor'], props.processor_file_path)
+        
+        console.start_simulation()
+        
+        props.status_daemons_started = True
         return {'FINISHED'}
 
     def execute_stopdaemons(self, context):
         """Stop control daemons on rendering nodes."""
-
         scene = context.scene
         props = scene.blendervr
-
-        props.proc.kill()
-        outs, errs = props.proc.communicate()
-        print('subprocess killed, last words:')
-        print(outs,errs)
-
+        
+        console.stop_simulation()
+        
+        props.status_daemons_started = False
         return {'FINISHED'}
 
     def execute_startplay(self, context):
@@ -245,11 +255,15 @@ class BlenderVRLaunchOperator(bpy.types.Operator):
 
 # ======================================================================
 def register():
+    if DEBUG:
+        logger.debug("Registering bvr.bvroperators classes.")
     bpy.utils.register_class(BlenderVRConfigFileOperator)
     bpy.utils.register_class(BlenderVRSceneLoadOperator)
     bpy.utils.register_class(BlenderVRLaunchOperator)
 
 def unregister():
+    if DEBUG:
+        logger.debug("Unregistering bvr.bvroperators classes.")
     bpy.utils.register_class(BlenderVRLaunchOperator)
     bpy.utils.register_class(BlenderVRSceneLoadOperator)
     bpy.utils.register_class(BlenderVRConfigFileOperator)

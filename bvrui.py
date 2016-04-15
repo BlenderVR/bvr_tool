@@ -40,18 +40,26 @@
 """
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 import bpy
-#from bpy.types import Panel
 
 # Load our environment settings (include standard config access path).
 from . import (
-        bvrprops,
-        )
+    RUNTIME,
+    bvrenv,
+    bvrprops,
+    )
+
+# To debug this module.
+DEBUG = True and not RUNTIME
 
 # ############################################################
 # User Interface
 # ############################################################
 
+# Define common sidebar location for all our panels.
 class BlenderVRUIBase:
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
@@ -123,7 +131,8 @@ class BlenderVRUIBase:
         #rowsub = layout.row(align=True)
         #rowsub.operator("bvr.launcher", text='Display Debug Windows').action = 'debug.window'
 
-
+# Note: some row/column layouts are created just to manage enable/disable
+# on widgets.
 class BVRDisplaySystemToolBar(BlenderVRUIBase, bpy.types.Panel):
     """Panel to select a Virtual Reality system to use and activate it."""
     bl_label = "VR Display System"
@@ -148,25 +157,36 @@ class BVRDisplaySystemToolBar(BlenderVRUIBase, bpy.types.Panel):
         rowsub.label("Configuration File:")
         rowsub = col.row(align=True)
         rowsub.prop(blendervr, "config_file_path", text="")
+
         # TODO: must load the file content when it is valid (to update
         # widgets status upon that content and its validity).
         rowsub = col.row(align=True)
-        rowsub.operator("bvr.configfile", text="Reload").action = 'reload'
+        op = rowsub.operator("bvr.configfile", text="Reload")
+        op.action = 'reload'
         rowsub.operator("bvr.configfile", text="Create New").action = 'new'
         rowsub = col.row(align=True)
+
         # A selection list to select a screens set from those listed in
         # the selected configuration file.
         # TODO: must update the list when configuration file change.
         rowsub.label("Screens Set:")
         rowsub = col.row(align=True)
         rowsub.prop(blendervr, "screen_setup", text="")
+
         # Two buttons to manage start and stop of daemons, and a checkbox
         # to have an automatic open of logs on error.
         rowsub = col.row(align=True)
         rowsub.label("RV Daemons:")
         rowsub = col.row(align=True)
-        rowsub.operator("bvr.launcher", text="Start").action = 'startdaemons'
-        rowsub.operator("bvr.launcher", text="Stop").action = 'stopdaemons'
+        #rowsub.enabled = blendervr.status_valid_display
+        colsub = rowsub.column()
+        colsub.operator("bvr.launcher", text="Start").action = 'startdaemons'
+        colsub.enabled = not blendervr.status_daemons_started
+        colsub = rowsub.column()
+        colsub.operator("bvr.launcher", text="Stop").action = 'stopdaemons'
+        colsub.enabled = blendervr.status_daemons_started
+
+
         rowsub = col.row(align=True)
         rowsub.prop(blendervr, "auto_open_logs", "Auto open logs")
 
@@ -236,13 +256,19 @@ class BVRStatusToolBar(BlenderVRUIBase, bpy.types.Panel):
             # An colored icon / text? representing the state
             # An interaction menu
 
+
 # ======================================================================
 def register():
+    if DEBUG:
+        logger.debug("Registering bvr.bvrui classes.")
     bpy.utils.register_class(BVRDisplaySystemToolBar)
     bpy.utils.register_class(BVRSceneScriptsToolBar)
     bpy.utils.register_class(BVRStatusToolBar)
 
+
 def unregister():
+    if DEBUG:
+        logger.debug("Unregistering bvr.bvrui classes.")
     bpy.utils.unregister_class(BVRDisplaySystemToolBar)
     bpy.utils.unregister_class(BVRSceneScriptsToolBar)
     bpy.utils.unregister_class(BVRStatusToolBar)

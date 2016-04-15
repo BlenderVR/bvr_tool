@@ -50,14 +50,26 @@ import sys
 from os import path as osp
 import functools
 import builtins     # Important: we modify builtins to add our stuff!
+import logging
+logger = logging.getLogger(__name__)
 
 # Note: this module is Blender and blendervr agnostic!
 
-DEBUG = True
+from . import (
+    RUNTIME,
+    )
+
+# To debug this module.
+DEBUG = True and not RUNTIME
 
 # Constants.
 CONFIG_FILENAME = "profile_1.1.ini"
 
+# Enable out logging debug.
+if not RUNTIME:
+    logging.basicConfig(filename=osp.join(osp.expanduser('~'), 'bvr_logs.txt'),
+                        filemode="w",   # Ensure overwrite the log file.
+                        level=logging.DEBUG)
 
 # Globals (ajusted in setup_environment())
 user_config_dir = ""
@@ -67,6 +79,10 @@ blendervr_config_file = ""
 
 def setup_environment():
     """Prepare the environment to work with blendervr console.
+    
+    This setup some files and directories, adjust the Python PATH of
+    current process to make blendervr importable, and inject requested
+    blendervr magic names into builtins.
     """
     global user_config_dir
     global blendervr_config_dir
@@ -77,7 +93,7 @@ def setup_environment():
     # --- Find root of config directory for the system.
     if 'XDG_CONFIG_HOME' in os.environ:
         user_config_dir = os.environ['XDG_CONFIG_HOME']
-    elif sys.platform.startswith("win"):
+    elif sys.platform.startswith('win'):
         user_config_dir = osp.join(os.environ['APPDATA'])
     elif sys.platform == 'darwin':
         user_config_dir = osp.join(osp.expanduser('~'), 'Library',
@@ -86,12 +102,10 @@ def setup_environment():
         user_config_dir = osp.join(osp.expanduser('~'), ".config")
     else:
         user_config_dir = osp.join(osp.expanduser('~'), ".config")
-    if DEBUG:
-        print("user_config_dir", repr(user_config_dir))
+    logger.debug("user_config_dir: %s", user_config_dir)
     # Use a subdirectory blender/vr.
     blendervr_config_dir = osp.join(user_config_dir, "blender", "vr")
-    if DEBUG:
-        print("blendervr_config_dir", blendervr_config_dir)
+    logger.debug("blendervr_config_dir: %s", blendervr_config_dir)
     if not osp.isdir(blendervr_config_dir):         # Ensure it exists.
         os.makedirs(blendervr_config_dir)
 
@@ -100,7 +114,7 @@ def setup_environment():
 
     # Ensure we have a modules/ subdirectory in preferences, make it available to blendervr.
     # TODO: rename modules_dir to pofiles_dir ?
-    modules_dir = os.path.join(blendervr_config_dir, 'modules')
+    modules_dir = os.path.join(blendervr_config_dir, "modules")
     if not osp.isdir(modules_dir): 
         os.makedirs(modules_dir)
     # /!\ Inject BlenderVR_profilePath in builtins
@@ -120,6 +134,3 @@ def setup_environment():
 # This is called immediatly to benefit from globals values in our
 # Blender objects definitions.
 setup_environment()
-
-
-

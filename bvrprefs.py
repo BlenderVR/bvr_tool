@@ -46,13 +46,19 @@ For the xml configuration file read, see bvrconfig module.
 """
 
 import configparser
+import logging
+logger = logging.getLogger(__name__)
+
 
 # Load our environment settings (include standard config access path).
 from . import (
-        bvrenv,
-        bvrprops,
-        )
+    RUNTIME,
+    bvrenv,
+    bvrprops,
+    )
 
+# To debug this module.
+DEBUG = True and not RUNTIME
 
 CONSOLE_SECTION = 'CONSOLE'
 
@@ -76,7 +82,7 @@ def save_prefs(propertiesgroup, filepath):
         config = configparser.ConfigParser()
         config.read(filepath)
     except IOError as e:
-        logging.getLogger(LOGGERNAME).exception("File {!r} load error.".format(filepath))
+        logger.exception("Error loading file %s", filepath)
         raise
 
     # Step 2) modify keys/values
@@ -89,7 +95,7 @@ def save_prefs(propertiesgroup, filepath):
             v = config.get(CONSOLE_SECTION, p)
             v = repr(getattr(propertiesgroup, p))
         else:
-            logging.getLogger(LOGGERNAME).error("Data type {} not supported.".format(t))
+            logger.error("Data type %s not supported.", t)
             raise RuntimeError("Unknown config data type.")
         config.set(CONSOLE_SECTION, p, v)
 
@@ -98,18 +104,20 @@ def save_prefs(propertiesgroup, filepath):
         with open(filepath, "w", encoding="utf8") as f:
             config.write(f)
     except IOError as e:
-        logging.getLogger(LOGGERNAME).exception("File {!r} write error.".format(filepath))
+        logger.exception("Error writing file %s", filepath)
         raise
 
 
 def load_prefs(filepath, propertiesgroup):
     """Load prefs from a file and update attributes in a BlenderVRProps."""
+    logger.info("Loading prefs from %s", filepath)
+
     try:
         config = configparser.ConfigParser()
         config.read(filepath)
     except IOError as e:
-        logging.getLogger(LOGGERNAME).exception("File {!r} load error.".format(filepath))
-        raise
+        # Start from a clean empty config.
+        config = configparser.ConfigParser()
 
     if not config.has_section(CONSOLE_SECTION):
         config.add_section(CONSOLE_SECTION)
@@ -122,6 +130,7 @@ def load_prefs(filepath, propertiesgroup):
         elif t is bool:
             v = config.getboolean(CONSOLE_SECTION, p)
         else:
-            logging.getLogger(LOGGERNAME).error("Data type {} not supported.".format(t))
-            raise RuntimeError("Unknown config data type.")
+            logger.error("Unknown config data type %s.", t)
+            raise RuntimeError("Unknown config data type {}.".format(t))
         setattr(propertiesgroup, p, v)
+        logger.info("Pref %s set to %r", p, v)

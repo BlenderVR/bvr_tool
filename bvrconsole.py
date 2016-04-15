@@ -48,46 +48,79 @@ import sys
 from os import path as osp
 import functools
 import builtins     # Important: we modify builtins to add our stuff!
+import logging
+logger = logging.getLogger(__name__)
 
 from . import (
+    RUNTIME,
     bvrenv,         # Import first ! it setup our execution environment.
     )
 
 # Note: as bvr is imported, normally package import of blender DONT start
-# the 
-from blendervr.tools import connector
-from blendervr.tools import protocol
+# their main() functions - this may 
+
+#from blendervr.tools import connector
+#from blendervr.tools import protocol
+from blendervr.console.base import ConsoleBase
+from blendervr.console.logic.console import ConsoleLogic
+from blendervr.console import profile
+from blendervr.tools import logger as blendervr_logger
+from blendervr.console import screens
+from blendervr.plugins import getPlugins
+
+# To debug this module.
+DEBUG = True and not RUNTIME
 
 
-DEBUG = True
-
-
-class BVRDaemonManager:
-    """Control a (remote/local) BlenderVR daemon.
+# This module is based on blendervr.console.console module, adapted to
+# our blender tool context.
+class BVRConsoleControler(ConsoleBase, ConsoleLogic):
+    """Interface to initial (Qt based) console code.
     
-    :ivar callbacks: map of callable for some events related to daemons.
-    :type callbacks: {str:[func]}
     """
     def __init__(self):
-        self.callbacks = {}
+        self._blender_file = None
+        self._loader_file = None
+        self._processor_files = None
+        self._processor = None
+        self._update_loader_script = "/".join((BlenderVR_root, 'utils',
+                                                    'update_loader.py'))
+        self._profile = profile.Profile(profile_file)
+        self._logger = blendervr_logger.getLogger('BlenderVR')
 
-    def register_callback(self, events, callback):
-        """Install a callback for a set of events.
-        """
-        for e in events:
-            self.callbacks.setdefault(e, []).append(callback)
+        # In the blendervr class system, the parent can be another object
+        # or a module.
+        parent = sys.modules[__name__]
+        ConsoleBase.__init__(self, parent)
+        ConsoleLogic.__init__(self)
 
-    def reset_callbacks(self):
-        # We use Python reference counting to "loose" all callbacks.
-        # Else must go throught keys, and cleanup lists before removing them…
-        self.callbacks = {}
+        self._screens = screens.Screens(self)
+        self._plugins = getPlugins(self, self._logger)
+
+        self.profile.setDefault({'config': {'file': '',
+                                            'path': []},
+                                 'files': {'blender': '',
+                                            'processor': '',
+                                            'link': True},
+                                 'screens': {'display': False},
+                                 'window': {'geometry': [0, 0, 0, 0]},
+                                 'processor': {'toggle': True}})
 
 
-class BVRLogCatcher:
-    """Listen for BlenderVR daemons logs.
-    
-    Central logs Used to:
-    1) 
-    """
-    def __init__(self):
+    @property
+    def profile(self):
+        return self._profile
+
+    @property
+    def logger(self):
+        return self._logger
+
+    @property
+    def plugins(self):
+        return self._plugins
+
+    # 
+    def display_screen_sets(self, possibleScreenSets):
+        # TODO: feed current_screens in bvrprops 
+        print("possibleScreenSets:", repr(possibleScreenSets)) 
         pass

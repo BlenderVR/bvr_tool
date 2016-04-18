@@ -48,6 +48,8 @@ import sys
 from os import path as osp
 import functools
 import builtins     # Important: we modify builtins to add our stuff!
+import socket
+from collections import namedtuple
 import logging
 logger = logging.getLogger(__name__)
 
@@ -59,8 +61,8 @@ from . import (
 # Note: as bvr is imported, normally package import of blender DONT start
 # their main() functions - this may 
 
-#from blendervr.tools import connector
-#from blendervr.tools import protocol
+from blendervr.tools import connector
+from blendervr.tools import protocol
 from blendervr.console.base import ConsoleBase
 from blendervr.console.logic.console import ConsoleLogic
 from blendervr.console import profile
@@ -71,14 +73,43 @@ from blendervr.plugins import getPlugins
 # To debug this module.
 DEBUG = True and not RUNTIME
 
+# Communication protocol transmit the message length in a header of this size:
+SIZE_LEN = connector.Common.SIZE_LEN
+# And the buffer for read is defined here:
+BUFFER_LEN = connector.Common.BUFFER_LEN
+
+
+# TODO: Remove this from module global!
+# For blendervr usage of Configure's parent when it is a module…
+_logger = logging.getLogger("BlenderVR")
+# For blendervr usage of _profile parent when it is a module…
+# Late bind in BVRConsoleControler construction.
+_profile = None
+
+# Storage of items for socket listen/read management.
+SocketCallback = namedtuple('SocketCallback', "socket_, callback, data")
+
+# Storage of pending data when reading messages.
+PendingRead = namedtuple('PendingRead', "remain_size, data")
 
 # This module is based on blendervr.console.console module, adapted to
 # our blender tool context.
+# In our usage, it is the _main_running_module for bendervr objects.
+# getConsole() and getMainRunningModule() return this module.
 class BVRConsoleControler(ConsoleBase, ConsoleLogic):
-    """Interface to initial (Qt based) console code.
-    
+    """Interface to logic part of console code.
+
+    :ivar socket_listeners: filenos of sockets to listen.
+    :type socket_listeners: [int]
+    :ivar listeners_callbacks: map of fileno to socket management items.
+    :type listeners_callbacks: [int: SocketCallback]
     """
-    def __init__(self):
+    def __init__(self, profile_file):
+        global _profile
+
+        self.socket_listeners = []
+        self.listeners_callbacks = {}
+        self.pending_read = {}
         self._blender_file = None
         self._loader_file = None
         self._processor_files = None
@@ -86,10 +117,13 @@ class BVRConsoleControler(ConsoleBase, ConsoleLogic):
         self._update_loader_script = "/".join((BlenderVR_root, 'utils',
                                                     'update_loader.py'))
         self._profile = profile.Profile(profile_file)
+        # Bind to module global for blendervr to find it.
+        _profile = self._profile
         self._logger = blendervr_logger.getLogger('BlenderVR')
 
         # In the blendervr class system, the parent can be another object
         # or a module.
+        # Note: this is the object returned as 
         parent = sys.modules[__name__]
         ConsoleBase.__init__(self, parent)
         ConsoleLogic.__init__(self)
@@ -124,3 +158,94 @@ class BVRConsoleControler(ConsoleBase, ConsoleLogic):
         # TODO: feed current_screens in bvrprops 
         print("possibleScreenSets:", repr(possibleScreenSets)) 
         pass
+
+    # ==================== ADAPTED GUI METHODS ========================
+    # Method called from logic to activate GUI code.
+    def addListenTo(self, socket_, callback, data=None):
+        """Add a socket listener to notify a callable when some data is ready to read.
+
+        :param socket_: network socket object to monitor for reading.
+        :type socket_: socket.Socket
+        :return: a tag data used to remove socket monitoring (the socket fileno).
+        :rtype: int
+        """
+        # Note: blendervr/console/logic/screen.py has been modified to transmit
+        # a Socket object and not its fileno in case of usage with bvr package.
+
+        # Store socket and memorize its callback.
+        socknum = socket_.fileno()
+        if socknum not in self.socket_listeners:
+            self.socket_listeners.append(socknum)
+        else:
+            raise RuntimeError("Socket used more than once")
+        self.listeners_callbacks[socknum] =  SocketCallback(socket_, callback, data)
+        return socknum  # Enough to manage late removing
+
+    def removeListenTo(self, tag):
+        """Remove a socket listener.
+        """
+        if tag not in self.listeners_callbacks:
+            self.logger.error("Unknown fileno %r to un-listen socket.", tag)
+            return
+        del self.listeners_callbacks[tag]
+        self.socket_listeners.remove(tag)
+
+
+    # ==================== NETWORK SOCKET MONITORING ========================
+    def nonblocking_read(self):
+        """Management of sockets read and message processing in an event loop context.
+        """
+        #TODO: Move all possible code to a background working thread, and just manage
+        # communication of some events between that thread and the blender event loop.
+        if not self.socket_listeners:
+            return
+        # As we work in a blender event loop, dont block on sockets (timeout=0)
+        rready, _, _ = select.select(
+                        self.socket_listeners, 
+                        [], 
+                        [], 
+                        timeout=0)
+
+        if not rready:
+            return
+
+        for socknum in rready:
+            rawdata = None  # In case of error.
+            cb = self.listeners_callbacks[socknum]
+            # Detect if we are beginning to read a message or reading next
+            # parts of a previous message read.
+            begin_message = socknum not in self.pending_read
+            if begin_message:
+                readsize = SIZE_LEN
+            else:
+                readsize = self.pending_read[socknum].remain_size
+
+            rawdata = cb.socket_.recv(readsize)
+
+            if begin_message:
+                # Retrieved message size.
+                if readsize == len(rawdata):
+                    messagesize = int(rawdata)
+                    self.pending_read[socknum] = PendingRead(messagesize, "")
+                else:
+                    # We fail to retrieve the message length!
+                    # What to do ???? Maybe we are unsynchronized on some
+                    # datagram.
+                    # We retrieve pending data, hoping to cleanup the socket.
+                    cb.socket_.recv(BUFFER_LEN)
+                    pass
+            else:
+                # Retrieve data (or part of data).
+                remain_size = self.pending_read[socknum].remain_size - len(rawdata)
+                rawdata = self.pending_read[socknum].data + rawdata
+                if remain_size > 0:
+                    self.pending_read[socknum] = PendingRead(remain_size, "")
+                else:
+                    # Have a complete message, process it.
+                    del self.pending_read[socknum] 
+                    try:
+                        message = protocol.decomposeMessage(rawdata)
+                        cd.callback(*message)
+                    except:
+                        self.logger.exception("Exception in message processing %r", rawdata)
+

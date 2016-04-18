@@ -257,6 +257,8 @@ class BVRStatusToolBar(BlenderVRUIBase, bpy.types.Panel):
             # An interaction menu
 
 
+
+
 # ======================================================================
 def register():
     if DEBUG:
@@ -264,7 +266,6 @@ def register():
     bpy.utils.register_class(BVRDisplaySystemToolBar)
     bpy.utils.register_class(BVRSceneScriptsToolBar)
     bpy.utils.register_class(BVRStatusToolBar)
-
 
 def unregister():
     if DEBUG:

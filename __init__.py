@@ -47,8 +47,12 @@ As it is started within a Blender GUI context, it duplicate necessary
 initialisation code from original blendervr console script.
 """
 
-DEBUG = True    # To enable/disable some print calls
+# To disable DEBUG in all modules - this must be first, to be defined when
+# bvr components import top module names.
+RUNTIME = False
 
+# To debug this module.
+DEBUG = True and not RUNTIME
 # Meta-data describe the tool for Blender tools GUI (provide informations, links
 # for help, versions, etc).
 bl_info = {
@@ -61,7 +65,7 @@ bl_info = {
     "warning": "",
     'tracker_url': 'https://github.com/BlenderVR/source/issues',
     "wiki_url": "http://blendervr.limsi.fr",
-    'support': 'COMMUNITY',
+    'support': 'TESTING',
     "category": "Game Engine"
     }
 
@@ -74,18 +78,11 @@ import imp
 import builtins     # Important: we modify builtins to add our stuff!
 import pickle
 import pprint
+import logging
+logger = logging.getLogger(__name__)
 
 # Load necessary stuff from blender.
 import bpy
-from bpy.props import (
-    StringProperty,
-    EnumProperty,
-    PointerProperty,
-    BoolProperty
-    )
-from bpy.types import (
-    PropertyGroup
-    )
 
 # Load our package management
 from . import (
@@ -108,9 +105,6 @@ def register():
     bvroperators.register()
     bvrui.register()
 
-    # Register this tool properties object in blender Scene type.
-    bpy.types.Scene.blendervr = PointerProperty(type=bvrprops.BlenderVRProps)
-
 
 # Register function is run when the addon is disabled.
 def unregister():
@@ -123,4 +117,3 @@ def unregister():
     bvrui.unregister()
     bvroperators.unregister()
     bvrprops.unregister()
-

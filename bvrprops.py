@@ -143,6 +143,14 @@ class BlenderVRProps(bpy.types.PropertyGroup):
     """
     
     # Following properties are saved to and loaded from preferences file
+    profile_file =  bpy.props.StringProperty(
+        name="BlenderVR Profile File Path",
+        description="Path to the pickled configuration file of old Console.",
+        default=osp.join(bvrenv.blendervr_config_dir, "profile_file.pickled"),
+        maxlen=1024, subtype="FILE_PATH",
+        options={'HIDDEN'},
+        update=make_update('profile_file')
+        )
     config_file_path = bpy.props.StringProperty(
         name="BlenderVR Configuration File Path",
         description="Path to the .xml configuration file describing physical VR installation.",
@@ -155,21 +163,21 @@ class BlenderVRProps(bpy.types.PropertyGroup):
         description="VR architecture screens setup within the choosen installation.",
         items=screens_lister,
         default=None,
-        update=make_update('config_file_path')
+        update=make_update('screen_setup')
         )
     blend_scene_file_path = bpy.props.StringProperty(
         name="Blender Scene File Path",
         description="Path to the blend scene to be rendered in the VR system.",
         default="//", 
         maxlen=1024, subtype="FILE_PATH",
-        update=make_update('config_file_path')
+        update=make_update('blend_scene_file_path')
         )
     processor_file_path = bpy.props.StringProperty(
         name="Processor File Path",
         description="Path to the processor file used for RV scene interaction logic.",
         default="//", 
         maxlen=1024, subtype="FILE_PATH",
-        update=make_update('config_file_path')
+        update=make_update('processor_file_path')
         )
     use_name_link = bpy.props.BoolProperty(
         name="Use Name Link",
@@ -177,14 +185,14 @@ class BlenderVRProps(bpy.types.PropertyGroup):
         default=False, 
         subtype="NONE",
         options={'HIDDEN'},
-        update=make_update('config_file_path')
+        update=make_update('use_name_link')
         )
     auto_open_logs = bpy.props.BoolProperty(
         name="Auto open logs",
         description="Automatically open log windows trigged on errors detection.",
         default=False, 
         subtype="NONE",
-        update=make_update('config_file_path')
+        update=make_update('auto_open_logs')
         )
 
     # Following properties are used for GUI interaction.

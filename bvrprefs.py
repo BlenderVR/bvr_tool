@@ -65,12 +65,14 @@ CONSOLE_SECTION = 'CONSOLE'
 LOGGERNAME = "console"
 
 # Note: if use another type than str or bool, update load/save functions.
-PROPITEMS = [ ('config_file_path', str, ""),
+PROPITEMS = [ ('profile_file', str, ""),
+              ('config_file_path', str, ""),
               ('screen_setup', str, ""),
               ('blend_scene_file_path', str, ""),
               ('processor_file_path', str, ""),
               ('use_name_link', bool, False),
               ('auto_open_logs', bool, False),
+              
             ]
 
 

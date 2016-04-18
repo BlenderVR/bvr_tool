@@ -59,8 +59,7 @@ from . import (
 DEBUG = True and not RUNTIME
 
 
-console = bvrconsole.BVRConsoleControler()
-console.start()
+console = None
 
 
 class BlenderVRConfigFileOperator(Operator):
@@ -189,8 +188,13 @@ class BlenderVRLaunchOperator(bpy.types.Operator):
 
     def execute_startdaemons(self, context):
         """Start control daemons on rendering nodes."""
+        global console
+        
         scene = context.scene
         props = scene.blendervr
+
+        console = bvrconsole.BVRConsoleControler(props.profile_file)
+        console.start()
 
         # Load XML configuration - this must be moved into a GUI handler
         # trigged by validity of configuration file field as a file.
@@ -209,9 +213,9 @@ class BlenderVRLaunchOperator(bpy.types.Operator):
         """Stop control daemons on rendering nodes."""
         scene = context.scene
         props = scene.blendervr
-        
+
         console.stop_simulation()
-        
+
         props.status_daemons_started = False
         return {'FINISHED'}
 
@@ -253,6 +257,26 @@ class BlenderVRLaunchOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
+
+# Following handler function is installed in scene_update_pre app handlers
+# to have idle code running in blender general event loop.
+@bpy.app.handlers.persistent
+def idle_tasks(context):
+    """Method called periodically by blender in its event loop.
+    
+    Manage background tasks for the Console management (mainly communication
+    for UI status update and logs display).
+    """
+    import time
+    #print("Called", time.time(), context)
+    if console is not None:
+        # Call idle processing code of console. 
+        try:
+            console.nonblocking_read()
+        except:
+            logger.exception("Exception in console.nonblocking_read")
+
+
 # ======================================================================
 def register():
     if DEBUG:
@@ -261,9 +285,13 @@ def register():
     bpy.utils.register_class(BlenderVRSceneLoadOperator)
     bpy.utils.register_class(BlenderVRLaunchOperator)
 
+    bpy.app.handlers.scene_update_pre.append(idle_tasks) 
+
 def unregister():
     if DEBUG:
         logger.debug("Unregistering bvr.bvroperators classes.")
+    bpy.app.handlers.scene_update_pre.remove(idle_tasks)
+
     bpy.utils.register_class(BlenderVRLaunchOperator)
     bpy.utils.register_class(BlenderVRSceneLoadOperator)
     bpy.utils.register_class(BlenderVRConfigFileOperator)

@@ -44,6 +44,7 @@ operator within the interface. You must set the operator's object action
 property.
 """
 
+from os import path as osp
 import logging
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,7 @@ from bpy.types import Operator
 from . import (
     RUNTIME,
     bvrconsole,
+    bvrprops,
     )
 
 # To debug this module.
@@ -84,39 +86,54 @@ class BlenderVRConfigFileOperator(Operator):
             return self.execute_new(context)
         elif act == "load":
             return self.execute_load(context)
-        elif act == "reload":
-            return self.execute_reload(context)
         elif act :
-            self.report({'ERROR'}, 'action "{}" (in configfile) not defined yet'.format(action))
+            self.report({'ERROR'}, 'action "{}" (in configfile) not defined yet'.format(act))
             return {'CANCELLED'}
 
 
     def execute_new(self, context):
+        """Create a new VR system configuration file from scene description.
+        """
+        # TODO…
+        self.report({'ERROR'}, 'currently unimplemented')
+        return {'CANCELLED'}
         # cleanup before we start
         # bpy.ops.object.select_all(action='DESELECT')
         return {'FINISHED'}
 
     def execute_load(self, context):
+        """Load console 
+        """
+        global console
 
-
-        # get file path
         scene = context.scene
         props = scene.blendervr
-        filepath = bpy.path.abspath(props.config_file_path)
-        # file_path = bpy.path.ensure_ext(filepath, ".x3d")
 
-        # get console
-        # bpy.ops.screen.new()
-        # bpy.ops.screen.area_dupli()
-        # bpy.ops.screen.userpref_show()
-        print('configuration file: ' + filepath)
+        filepath = osp.abspath(props.config_file_path)
 
+        if console is None:
+            console = bvrconsole.BVRConsoleControler(filepath)
+            console.start()
+
+        # (Re)Load XML configuration.
+        console.profile.setValue(['config', 'file'], filepath)
+        props.status_loaded_config_file = console.load_configuration_file()
+
+        if not props.status_loaded_config_file:
+            self.report({'ERROR'}, 'VR system configuration file load fail.')
+            return {'CANCELLED'}
+
+        print(console._screenSets.items())
+
+        # TODO: setup screen sets.
+        bvrprops.current_screens.clear()
+
+        currentScreenSet = console.profile.getValue(['screen', 'set'])
+        possibleScreenSets = list(OrderedDict(sorted(console._screenSets.items())).keys())
+
+        self.report({'INFO'}, 'VR system configuration file loaded.')
 
         return {'FINISHED'}
-
-    def execute_reload(self, context):
-        return {'FINISHED'}
-
 
 
 class BlenderVRSceneLoadOperator(Operator):
@@ -159,7 +176,7 @@ class BlenderVRSceneLoadOperator(Operator):
         return {'FINISHED'}
 
 
-class BlenderVRLaunchOperator(bpy.types.Operator):
+class BlenderVRLaunchOperator(Operator):
     """"""
     bl_label = "BlenderVR Launcher"
     bl_idname = 'bvr.launcher'
@@ -183,29 +200,28 @@ class BlenderVRLaunchOperator(bpy.types.Operator):
         elif act == 'debugwindow':
             return self.execute_debugwindow(context)
         else:
-            self.report({'ERROR'}, 'action "{}" (in launcher) not defined yet'.format(action))
+            self.report({'ERROR'}, 'action "{}" (in launcher) not defined yet'.format(act))
             return {'CANCELLED'}
 
     def execute_startdaemons(self, context):
         """Start control daemons on rendering nodes."""
         global console
-        
+
         scene = context.scene
         props = scene.blendervr
 
-        console = bvrconsole.BVRConsoleControler(props.profile_file)
-        console.start()
+        if console is None:
+            self.report({'ERROR'}, 'canot start daemons without a console')
+            return {'CANCELLED'}
 
         # Load XML configuration - this must be moved into a GUI handler
         # trigged by validity of configuration file field as a file.
-        console.profile.setValue(['config', 'file'], props.config_file_path)
-        console.load_configuration_file()
         console.profile.setValue(['screen', 'set'], props.screen_setup)
         console.profile.setValue(['files', 'blender'], props.blend_scene_file_path)
         console.profile.setValue(['files', 'processor'], props.processor_file_path)
-        
+
         console.start_simulation()
-        
+
         props.status_daemons_started = True
         return {'FINISHED'}
 
@@ -221,27 +237,13 @@ class BlenderVRLaunchOperator(bpy.types.Operator):
 
     def execute_startplay(self, context):
         """Start playing scene on rendering nodes."""
-
-         # get file path
         scene = context.scene
         props = scene.blendervr
-        # tryout, start blenderplayer
-        # bpy.ops.wm.blenderplayer_start()
-
-        import subprocess
-        args = ['python3', '/Users/AstrApple/WorkSpace/Blender_Workspace/addons/blendervr/source/blenderVR', 'controller']
-        props.proc = subprocess.Popen(args,stdin=subprocess.PIPE, stdout=subprocess.PIPE, close_fds=True)
-        print('opened',props.proc)
-
-        # outs, errs = blendervr.proc.communicate(timeout=15)
-        outs, errs = props.proc.communicate()
-        print('first words: \n', outs,errs)
 
         return {'FINISHED'}
 
     def execute_stopplay(self, context):
         """Stop playing scene on rendering nodes."""
-
         scene = context.scene
         props = scene.blendervr
 
@@ -263,7 +265,7 @@ class BlenderVRLaunchOperator(bpy.types.Operator):
 @bpy.app.handlers.persistent
 def idle_tasks(context):
     """Method called periodically by blender in its event loop.
-    
+
     Manage background tasks for the Console management (mainly communication
     for UI status update and logs display).
     """

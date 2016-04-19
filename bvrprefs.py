@@ -72,7 +72,6 @@ PROPITEMS = [ ('profile_file', str, ""),
               ('processor_file_path', str, ""),
               ('use_name_link', bool, False),
               ('auto_open_logs', bool, False),
-              
             ]
 
 

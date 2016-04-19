@@ -49,6 +49,7 @@ from os import path as osp
 import functools
 import builtins     # Important: we modify builtins to add our stuff!
 import socket
+import select
 from collections import namedtuple
 import logging
 logger = logging.getLogger(__name__)
@@ -69,6 +70,14 @@ from blendervr.console import profile
 from blendervr.tools import logger as blendervr_logger
 from blendervr.console import screens
 from blendervr.plugins import getPlugins
+from blendervr import plugins   # Needed by xml parsing code.
+
+
+A VOIR
+#comment les plugins sont utilisés par le loader XML et est-ce qu'il
+#retrouve ses petits pour être capable de libre le fichier dans son ensemble?
+
+
 
 # To debug this module.
 DEBUG = True and not RUNTIME
@@ -79,7 +88,6 @@ SIZE_LEN = connector.Common.SIZE_LEN
 BUFFER_LEN = connector.Common.BUFFER_LEN
 
 
-# TODO: Remove this from module global!
 # For blendervr usage of Configure's parent when it is a module…
 _logger = logging.getLogger("BlenderVR")
 # For blendervr usage of _profile parent when it is a module…
@@ -110,6 +118,16 @@ class BVRConsoleControler(ConsoleBase, ConsoleLogic):
         self.socket_listeners = []
         self.listeners_callbacks = {}
         self.pending_read = {}
+
+        # Following attributes are managed by ConsoleLogic:
+        #   _possibleScreenSets = None
+        #   _anchor = None
+        #   _previous_state = None
+        #   _common_processors = []
+        # TODO: some attributes are not set in the constructor but
+        # in load_configuration_file() method, so they may NOT be set if
+        # there is an error in the 
+        # And are "automagically" used by GUI.
         self._blender_file = None
         self._loader_file = None
         self._processor_files = None
@@ -153,7 +171,7 @@ class BVRConsoleControler(ConsoleBase, ConsoleLogic):
     def plugins(self):
         return self._plugins
 
-    # 
+
     def display_screen_sets(self, possibleScreenSets):
         # TODO: feed current_screens in bvrprops 
         print("possibleScreenSets:", repr(possibleScreenSets)) 
@@ -197,19 +215,23 @@ class BVRConsoleControler(ConsoleBase, ConsoleLogic):
         """
         #TODO: Move all possible code to a background working thread, and just manage
         # communication of some events between that thread and the blender event loop.
+        # May have one thread per socket to listen (and work with blocking select).
         if not self.socket_listeners:
+            #self.logger.debug("No socket active")
             return
         # As we work in a blender event loop, dont block on sockets (timeout=0)
         rready, _, _ = select.select(
                         self.socket_listeners, 
-                        [], 
-                        [], 
-                        timeout=0)
+                        [],
+                        [],
+                        0)
 
         if not rready:
+            #self.logger.debug("No socket ready")
             return
 
         for socknum in rready:
+            self.logger.debug("Socket operations…")
             rawdata = None  # In case of error.
             cb = self.listeners_callbacks[socknum]
             # Detect if we are beginning to read a message or reading next
@@ -244,8 +266,9 @@ class BVRConsoleControler(ConsoleBase, ConsoleLogic):
                     # Have a complete message, process it.
                     del self.pending_read[socknum] 
                     try:
-                        message = protocol.decomposeMessage(rawdata)
-                        cd.callback(*message)
+                        message_parts = protocol.decomposeMessage(rawdata)
+                        self.logger.debug("Received message %r", message_parts)
+                        cd.callback(*message_parts)
                     except:
                         self.logger.exception("Exception in message processing %r", rawdata)
 

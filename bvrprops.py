@@ -205,13 +205,22 @@ class BlenderVRProps(bpy.types.PropertyGroup):
         update=make_update('status_daemons_started')
         )
 
-    status_valid_config_file = bpy.props.BoolProperty(
+    status_exists_config_file = bpy.props.BoolProperty(
         name="Valid Configuration File",
-        description="Memorise status of configuration file validity.",
+        description="Status indicating that configuration file exists.",
         default=False, 
         subtype="NONE",
         options={'HIDDEN'},
-        update=make_update('status_valid_config_file')
+        update=make_update('status_exists_config_file')
+        )
+
+    status_loaded_config_file = bpy.props.BoolProperty(
+        name="Loaed Configuration File",
+        description="Status indicating that configuration has been loaded.",
+        default=False, 
+        subtype="NONE",
+        options={'HIDDEN'},
+        update=make_update('status_loaded_config_file')
         )
 
     status_valid_display = bpy.props.BoolProperty(

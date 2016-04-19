@@ -40,6 +40,7 @@
 """
 """
 
+from os import path as osp
 import logging
 logger = logging.getLogger(__name__)
 
@@ -66,76 +67,21 @@ class BlenderVRUIBase:
     bl_description= "Blender Virtuel Reality integration within Game Engine."
     bl_category = "BlenderVR"   # The side tab name where toolbar must be displayed.
 
+    @classmethod
+    def poll(cls, context):
+        """Return True if the user interface is compatible with current mode.
+        """
+        return True
+        # TODO: return False if used in BGE mode by example. ?
+        rd = context.scene.render
+        return rd.engine in cls.COMPAT_ENGINES
 
-#class BlenderVRToolBar(BlenderVRUIBase, Panel):
-
-    #bl_label = "BlenderVR"
-
-    #@staticmethod
-    #def draw(self, context):
-        #layout = self.layout
-
-        #scene = context.scene
-        #blendervr = scene.blendervr
-        #obj = context.object
-
-        ## ----------------------------------------------
-        #row = layout.row()
-        #row.label("BlenderVR Configuration:")
-
-        ## Configuration file
-        #col = layout.column()
-        #rowsub = col.row(align=True)
-        #rowsub.label("Select config file:")
-        #rowsub = col.row(align=True)
-        #rowsub.prop(blendervr, "config_file_path", text="")
-        #rowsub = col.row(align=True)
-        #rowsub.operator("bvr.configfile", text="Load").action = 'load'
-        #rowsub.operator("bvr.configfile", text="Create New").action = 'new'
-
-        ## Screen setup
-        #col = layout.column()
-        #rowsub = col.row(align=True)
-        #rowsub.label("Select screen setup:")
-        #rowsub = col.row(align=True)
-        #rowsub.prop(blendervr, "screen_setup", text="")
-
-        ## Blender scene
-        #col = layout.column()
-        #rowsub = col.row(align=True)
-        #rowsub.label("Select Blender scene:")
-        #rowsub = col.row()
-        #rowsub.prop(blendervr, "blend_scene_file_path", text="")
-        #rowsub = col.row(align=True)
-        #rowsub.operator("bvr.blenderscene", text="Use Current").action = 'current'
-
-        ## Processor file
-        #col = layout.column()
-        #rowsub = col.row(align=True)
-        #rowsub.label("Select Processor File:")
-        #rowsub = col.row()
-        #rowsub.prop(blendervr, "processor_file_path", text="")
-        #rowsub = col.row(align=True)
-        #rowsub.operator("bvr.blenderscene", text="Name Link").action = 'NameLink'
-
-        ## Launcher
-        #row = layout.row()
-        #row.label("BlenderVR Launcher:")
-        #rowsub = layout.row(align=True)
-        #rowsub.operator("bvr.launcher", text='Start').action = 'start'
-        #rowsub.operator("bvr.launcher", text='Stop').action = 'stop'
-
-        ## Debug Windows
-        #row = layout.row()
-        #row.label("Debug Windows:")
-        #rowsub = layout.row(align=True)
-        #rowsub.operator("bvr.launcher", text='Display Debug Windows').action = 'debug.window'
 
 # Note: some row/column layouts are created just to manage enable/disable
 # on widgets.
 class BVRDisplaySystemToolBar(BlenderVRUIBase, bpy.types.Panel):
-    """Panel to select a Virtual Reality system to use and activate it."""
-    bl_label = "VR Display System"
+    """Panel to select a Virtual Reality display system to use and activate it."""
+    bl_label = "VR System"
 
     @staticmethod
     def draw(self, context):
@@ -161,9 +107,9 @@ class BVRDisplaySystemToolBar(BlenderVRUIBase, bpy.types.Panel):
         # TODO: must load the file content when it is valid (to update
         # widgets status upon that content and its validity).
         rowsub = col.row(align=True)
-        op = rowsub.operator("bvr.configfile", text="Reload")
-        op.action = 'reload'
-        rowsub.operator("bvr.configfile", text="Create New").action = 'new'
+        rowsub.operator("bvr.configfile", text="Reload").action = 'load'
+        rowsub.enabled = blendervr.status_exists_config_file
+        #rowsub.operator("bvr.configfile", text="Create New").action = 'new'
         rowsub = col.row(align=True)
 
         # A selection list to select a screens set from those listed in
@@ -190,6 +136,19 @@ class BVRDisplaySystemToolBar(BlenderVRUIBase, bpy.types.Panel):
         rowsub = col.row(align=True)
         rowsub.prop(blendervr, "auto_open_logs", "Auto open logs")
 
+def config_file_path_updated(self, context):
+    """Manage updating of configuration file path field.
+    
+    Check if the file exists, if it exists, load it immediatly.
+    This trig the screen set update too.
+    Method registered for config_file_path property update.
+    """
+    newpath = self.config_file_path
+    self.status_exists_config_file = osp.isfile(newpath)
+    if self.status_exists_config_file:
+        bpy.ops.bvr.configfile(action='load')
+
+bvrprops.register_update_handler('config_file_path', config_file_path_updated)
 
 class BVRSceneScriptsToolBar(BlenderVRUIBase, bpy.types.Panel):
     """Panel to select a scene file, processir, and to use it in VR system."""
@@ -251,7 +210,9 @@ class BVRStatusToolBar(BlenderVRUIBase, bpy.types.Panel):
         rowsub = col.row(align=True)
         rowsub.label("Daemons &  Players status:")
 
-        # May add sets of grouped items with each containing:
+        # Add a menu to allow grouped operations on ALL daemons/players.
+        
+        # For each daemon/player, add sets of grouped items with each containing:
             # Maybe a label (?)
             # An colored icon / text? representing the state
             # An interaction menu

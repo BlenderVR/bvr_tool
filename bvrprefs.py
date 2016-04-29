@@ -45,6 +45,10 @@ it dont save all properties needed at BlenderVR runtime console control.
 For the xml configuration file read, see bvrconfig module.
 """
 
+#TODO: Manage different prefs presets, with save as/select/remove? actions,
+# creating ad-hoc sections in the .INI file (and have a "latest_prefs"
+# key indicating what prefs to reload at startup).
+
 import configparser
 import logging
 logger = logging.getLogger(__name__)
@@ -77,6 +81,7 @@ PROPITEMS = [ ('profile_file', str, ""),
 
 def save_prefs(propertiesgroup, filepath):
     """Save the prefs part of a BlenderVRProps in a file."""
+    logger.info("Saving prefs to %s", filepath)
     # Proceed in 3 steps to ensure to keep user comments in the file.
     # Step 1) load config content
     try:

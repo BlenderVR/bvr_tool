@@ -76,7 +76,6 @@ user_config_dir = ""
 blendervr_config_dir = ""
 blendervr_config_file = ""
 
-
 def setup_environment():
     """Prepare the environment to work with blendervr console.
     
@@ -130,6 +129,9 @@ def setup_environment():
     if blendervr_dir not in sys.path:
         sys.path.append(blendervr_dir)
 
+
+if 'BVR_LOADER_CREATION' in os.environ:
+    logger.info("Running as loader creation.")
 
 # This is called immediatly to benefit from globals values in our
 # Blender objects definitions.

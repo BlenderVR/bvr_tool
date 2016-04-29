@@ -109,14 +109,16 @@ class BlenderVRConfigFileOperator(Operator):
         scene = context.scene
         props = scene.blendervr
 
-        filepath = osp.abspath(props.config_file_path)
-
+        pickle_profile = osp.abspath(props.profile_file)
+        xml_config = osp.abspath(props.config_file_path)
+        
         if console is None:
-            console = bvrconsole.BVRConsoleControler(filepath)
+            console = bvrconsole.BVRConsoleControler(pickle_profile)
             console.start()
 
-        # (Re)Load XML configuration.
-        console.profile.setValue(['config', 'file'], filepath)
+        # Load XML configuration.
+        logger.info("Loading XML VR device configuration file %s", xml_config)
+        console.profile.setValue(['config', 'file'], xml_config)
         props.status_loaded_config_file = console.load_configuration_file()
 
         if not props.status_loaded_config_file:
@@ -210,12 +212,12 @@ class BlenderVRLaunchOperator(Operator):
         scene = context.scene
         props = scene.blendervr
 
+        logger.info("Starting daemons")
+
         if console is None:
             self.report({'ERROR'}, 'canot start daemons without a console')
             return {'CANCELLED'}
 
-        # Load XML configuration - this must be moved into a GUI handler
-        # trigged by validity of configuration file field as a file.
         console.profile.setValue(['screen', 'set'], props.screen_setup)
         console.profile.setValue(['files', 'blender'], props.blend_scene_file_path)
         console.profile.setValue(['files', 'processor'], props.processor_file_path)
@@ -230,6 +232,8 @@ class BlenderVRLaunchOperator(Operator):
         scene = context.scene
         props = scene.blendervr
 
+        logger.info("Stopping daemons")
+
         console.stop_simulation()
 
         props.status_daemons_started = False
@@ -240,6 +244,8 @@ class BlenderVRLaunchOperator(Operator):
         scene = context.scene
         props = scene.blendervr
 
+        logger.info("Starting players")
+
         return {'FINISHED'}
 
     def execute_stopplay(self, context):
@@ -247,7 +253,7 @@ class BlenderVRLaunchOperator(Operator):
         scene = context.scene
         props = scene.blendervr
 
-
+        logger.info("Stopping players")
 
         return {'FINISHED'}
 

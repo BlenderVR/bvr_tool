@@ -232,7 +232,8 @@ class BlenderVRProps(bpy.types.PropertyGroup):
         update=make_update('status_valid_display')
         )
 
-    # Following properties are used at BlenderVR running time for feedback.
+    # Following properties are used at BlenderVR running time or for feedback.
+
 
 
 
@@ -281,6 +282,9 @@ def unregister():
 
     bpy.app.handlers.load_post.remove(scene_load_post_handler)
     bpy.app.handlers.save_post.remove(scene_save_post_handler)
+
+    # Remove this tool properties object from blender Scene type.
+    del bpy.types.Scene.blendervr
 
     bpy.utils.unregister_class(BlenderVRProps)
 

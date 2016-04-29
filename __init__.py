@@ -53,13 +53,14 @@ RUNTIME = False
 
 # To debug this module.
 DEBUG = True and not RUNTIME
+
 # Meta-data describe the tool for Blender tools GUI (provide informations, links
 # for help, versions, etc).
 bl_info = {
     "name": "BlenderVR",
-    "author": "David Poirier-Quinot",
-    "version": (0, 1),
-    "blender": (2, 7, 6),
+    "author": "David Poirier-Quinot, Laurent Pointal",
+    "version": (0, 2),
+    "blender": (2, 7, 7),
     "location": "3D View > Toolbox",
     "description": "A collection of tools to configure and control your BlenderVR environment.",
     "warning": "",
@@ -69,51 +70,48 @@ bl_info = {
     "category": "Game Engine"
     }
 
-
 # ===== Normal module imports.
 # Load needed standard modules.
 import os
 from os import path as osp
 import imp
+import sys
 import builtins     # Important: we modify builtins to add our stuff!
 import pickle
 import pprint
 import logging
 logger = logging.getLogger(__name__)
 
-# Load necessary stuff from blender.
-import bpy
+if 'BVR_LOADER_CREATION' not in os.environ:
+    # Load necessary stuff from blender.
+    import bpy
 
-# Load our package management
-from . import (
-    bvrenv,         # Import first ! it setup our execution environment.
-    bvrprops,
-    bvrprefs,
-    bvroperators,
-    bvrui,
-    bvrconsole,
-    bvrconfig,
-    )
+    # Load our package management
+    from . import (
+        bvrenv,         # Import first ! it setup our execution environment.
+        bvrprops,
+        bvrprefs,
+        bvroperators,
+        bvrui,
+        bvrconsole,
+        bvrconfig,
+        )
 
 
 # ======================================================================
 def register():
     """Register the Blender GUI tools, and setup for BlenderVR console."""
+    if 'BVR_LOADER_CREATION' not in os.environ:
+        # Register classes of our submodules.
+        bvrprops.register()
+        bvroperators.register()
+        bvrui.register()
 
-    # Register classes of our submodules.
-    bvrprops.register()
-    bvroperators.register()
-    bvrui.register()
 
-
-# Register function is run when the addon is disabled.
 def unregister():
     """Unregister the Blender GUI tools, and remove BlenderVR console stuff."""
-
-    # Remove this tool properties object from blender Scene type.
-    del bpy.types.Scene.blendervr
-
-    # Unregister classes of our submodules.
-    bvrui.unregister()
-    bvroperators.unregister()
-    bvrprops.unregister()
+    if 'BVR_LOADER_CREATION' not in os.environ:
+        # Unregister classes of our submodules.
+        bvrui.unregister()
+        bvroperators.unregister()
+        bvrprops.unregister()

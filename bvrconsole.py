@@ -73,12 +73,6 @@ from blendervr.plugins import getPlugins
 from blendervr import plugins   # Needed by xml parsing code.
 
 
-A VOIR
-#comment les plugins sont utilisés par le loader XML et est-ce qu'il
-#retrouve ses petits pour être capable de libre le fichier dans son ensemble?
-
-
-
 # To debug this module.
 DEBUG = True and not RUNTIME
 
@@ -115,6 +109,8 @@ class BVRConsoleControler(ConsoleBase, ConsoleLogic):
     def __init__(self, profile_file):
         global _profile
 
+        logger.info("Creating BVRConsoleControler with profile %s", profile_file)
+
         self.socket_listeners = []
         self.listeners_callbacks = {}
         self.pending_read = {}
@@ -147,6 +143,7 @@ class BVRConsoleControler(ConsoleBase, ConsoleLogic):
         ConsoleLogic.__init__(self)
 
         self._screens = screens.Screens(self)
+
         self._plugins = getPlugins(self, self._logger)
 
         self.profile.setDefault({'config': {'file': '',
@@ -171,6 +168,8 @@ class BVRConsoleControler(ConsoleBase, ConsoleLogic):
     def plugins(self):
         return self._plugins
 
+    #def getConsole(self):
+    #    return sys.modules['blendervr.console.plugins']
 
     def display_screen_sets(self, possibleScreenSets):
         # TODO: feed current_screens in bvrprops 
@@ -190,6 +189,9 @@ class BVRConsoleControler(ConsoleBase, ConsoleLogic):
         # Note: blendervr/console/logic/screen.py has been modified to transmit
         # a Socket object and not its fileno in case of usage with bvr package.
 
+        # TODO: the "socket_" can be a blendervr.tools.connector.Server,
+        # check if we need to test for this case and deal with it.
+
         # Store socket and memorize its callback.
         socknum = socket_.fileno()
         if socknum not in self.socket_listeners:
@@ -205,8 +207,9 @@ class BVRConsoleControler(ConsoleBase, ConsoleLogic):
         if tag not in self.listeners_callbacks:
             self.logger.error("Unknown fileno %r to un-listen socket.", tag)
             return
+        sc = self.listeners_callbacks[tag]
         del self.listeners_callbacks[tag]
-        self.socket_listeners.remove(tag)
+        self.socket_listeners.remove(sc.socket_.fileno())
 
 
     # ==================== NETWORK SOCKET MONITORING ========================

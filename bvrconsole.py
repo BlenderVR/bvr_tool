@@ -68,7 +68,7 @@ from blendervr.console.base import ConsoleBase
 from blendervr.console.logic.console import ConsoleLogic
 from blendervr.console import profile
 from blendervr.tools import logger as blendervr_logger
-from blendervr.console import screens
+from blendervr.console.logic.screens import ConsoleScreensLogic
 from blendervr.plugins import getPlugins
 from blendervr import plugins   # Needed by xml parsing code.
 
@@ -142,7 +142,7 @@ class BVRConsoleControler(ConsoleBase, ConsoleLogic):
         ConsoleBase.__init__(self, parent)
         ConsoleLogic.__init__(self)
 
-        self._screens = screens.Screens(self)
+        self._screens = ConsoleScreensLogic()
 
         self._plugins = getPlugins(self, self._logger)
 

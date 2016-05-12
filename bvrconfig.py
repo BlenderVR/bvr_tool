@@ -67,7 +67,7 @@ from blendervr.console.xml import Configure
 
 def load_configuration(config_paths, config_file):
     """Return a blendervr Configure object corresponding to configuration file.
-    
+
     :param config_file: bas XML configuration file.
     :type config_file: string
     :param config_paths: directories where other configuration file must be searched.

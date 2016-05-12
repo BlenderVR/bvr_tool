@@ -122,7 +122,7 @@ class BVRDisplaySystemToolBar(BlenderVRUIBase, bpy.types.Panel):
         # Two buttons to manage start and stop of daemons, and a checkbox
         # to have an automatic open of logs on error.
         rowsub = col.row(align=True)
-        rowsub.label("RV Daemons:")
+        rowsub.label("VR Daemons:")
         rowsub = col.row(align=True)
         #rowsub.enabled = blendervr.status_valid_display
         colsub = rowsub.column()
@@ -216,7 +216,8 @@ class BVRStatusToolBar(BlenderVRUIBase, bpy.types.Panel):
             # Maybe a label (?)
             # An colored icon / text? representing the state
             # An interaction menu
-
+                # To show logs
+                # To select logging level
 
 
 
